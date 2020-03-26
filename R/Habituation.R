@@ -1,3 +1,4 @@
+# This function determines the max peak for each pulse of odordant in a multi-pusle experiment
 habituation <- function(genotype, end = 30, ...) {
   #first get a directory path to use for saving:
   message("choose your habituation data file")
