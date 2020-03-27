@@ -11,7 +11,7 @@ habituation <- function(genotype, end = 30, ...) {
            pulse_time = time - (pulse_num - 1)*60)
   
   peakPulses <- data %>%
-    group_by(animal, animal_num, pulse_num) %>%
+    group_by(genotype, animal, animal_num, pulse_num) %>%
     summarize(peak_delF = max_delta(delF, end = end)) # max of 20 frames after 'end' of the pre-pulse window, minus mean of 10 frames prior
   
   p <- peakPulses %>% ggplot(aes(x = pulse_num, y = peak_delF)) + geom_point()
