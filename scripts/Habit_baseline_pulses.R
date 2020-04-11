@@ -1,4 +1,3 @@
-#a function to plot delta F / F for each pulse normalized to each baseline prior to the pulse overlaid
 habit_baseline_pulses <- function(genotype, pulse_dur = 60, write_data = TRUE, n_pulses = 6) {
   
   library(tidyverse)
@@ -21,7 +20,7 @@ habit_baseline_pulses <- function(genotype, pulse_dur = 60, write_data = TRUE, n
     mutate(corrected_delF = delF - baseline) %>%
     filter(pulse_num <= n_pulses)
   
-  dataset <- dataset %>%
+  plot <- dataset %>%
     ggplot(aes(x = pulse_time, y = corrected_delF)) +
     annotate("rect", xmin = 30, xmax = 40, ymin = -.05, ymax = 0.6,
              alpha = .05, colour = "grey") +
@@ -35,7 +34,7 @@ habit_baseline_pulses <- function(genotype, pulse_dur = 60, write_data = TRUE, n
     guides(colour = guide_legend("Pulse number"),
            fill = guide_legend("Pulse number"))
   
-  print(dataset)
+  print(plot)
   
   if(write_data) {
     write_csv(dataset, file.path(dirname(filename),
@@ -45,4 +44,3 @@ habit_baseline_pulses <- function(genotype, pulse_dur = 60, write_data = TRUE, n
   }
   
 }
-
