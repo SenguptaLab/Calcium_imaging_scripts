@@ -1,15 +1,18 @@
-#script to extract values for each pulse and copy to csv file: max > 40 seconds - for BASELINE CORRECTED habit delF values (supplied from habit_baseline_pulses function)
+#script to extract values for each pulse and copy to csv file: max > 40 seconds - for BASELINE CORRECTED fit to exponential decay (supplied from habit_baseline_pulses function)
 #also determines t1/2 for each calcium trace
-#open wt_habit_baseline_pulses .csv file
+#open habit_baseline_pulses .csv file
 #on plots - dashed lines = fit
 decay_baseline_correct <- function(genotype, #mandatory genotype, should be text
-                                 pulse_length = 60, # time of pulse in seconds
-                                 n_pulses = 5) {
+                                   pulse_length = 60, # time of pulse in seconds 
+                                   stim_length = 10, # time of stimulus in seconds
+                                   pre_pulse = 30, # time before each pulse in seconds
+                                   n_pulses = 5) {
   
   library(tidyverse)
   library(magrittr)
-  pulse_length <- 60
-  n_pulses <- 5
+  # pulse_length <- 60
+  # stim_length <- 10
+  # n_pulses <- 5
   
   filename <- file.choose()
   data <- read_csv(filename)
@@ -18,14 +21,14 @@ decay_baseline_correct <- function(genotype, #mandatory genotype, should be text
   ######      removal
   postPulse_data <- data %>%
     group_by(genotype, animal, animal_num, pulse_num) %>%
-    filter(pulse_time > 28 & pulse_time < 40.25) %>%
+    filter(pulse_time > (pre_pulse-2) & pulse_time < (pre_pulse + stim_length - 0.5)) %>%
     select(-signal, -MeanGCaMP, -MeanBackground, -fitted) %>% #get rid of some useless columns
     mutate(row_number = row_number()) # first add a row_number column to use as index
   
   peak_rows <-data %>%
     group_by(genotype, animal, animal_num, pulse_num) %>%
-    filter(pulse_time > 28 & pulse_time < 40.25) %>%
-    summarize(peak = which.max(corrected_delF)) # gives the index (row number) of max value
+    filter(pulse_time > (pre_pulse-2) & pulse_time < (pre_pulse + stim_length - 0.5)) %>%
+    summarize(peak = which.max(delF)) # gives the index (row number) of max value
   
   ##### now filter each pulse to take only times > than peak #####
   decay_data <- full_join(postPulse_data, peak_rows) %>%
@@ -35,12 +38,13 @@ decay_baseline_correct <- function(genotype, #mandatory genotype, should be text
            decay_time = new_row_number*0.25) 
   
   #### plot result for pulse
-  decay_data %>%
+  plot1 <- decay_data %>%
     filter(pulse_num < (n_pulses + 1)) %>%
-    ggplot(aes(x = decay_time, y = corrected_delF)) +
+    ggplot(aes(x = decay_time, y = delF)) +
     geom_line(aes(group = animal, colour = animal_num)) + 
     facet_wrap(~pulse_num) +
     guides(color = guide_legend("Pulse number"))
+  print(plot1)
   
   # in this model k = exp(lrc) and y(t) = c + y0*exp(-k*t)
   # so ln(delF0 / .5 * delF0) = k * t(1/2), so ln(2)/k = t(1/2)
@@ -119,5 +123,3 @@ decay_baseline_correct <- function(genotype, #mandatory genotype, should be text
                              "_decay_baseline_correct.csv")))
   
 }
-
-
