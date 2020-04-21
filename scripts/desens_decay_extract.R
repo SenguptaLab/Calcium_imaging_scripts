@@ -37,7 +37,7 @@ desens_decay_extract <- function(genotype, #mandatory genotype, should be text
   
   ##### now filter each pulse to take only times > than peak #####
   decay_data <- full_join(postPulse_data, peak_rows) %>%
-    filter(row_number > peak) %>%
+    filter(row_number >= peak) %>%
     group_by(genotype, animal, animal_num, pulse_num) %>%
     mutate(new_row_number = row_number(),
            decay_time = new_row_number*0.25) 
