@@ -1,0 +1,125 @@
+#script to extract values for each pulse and copy to csv file: max > 40 seconds - for BASELINE CORRECTED fit to exponential decay (supplied from habit_baseline_pulses function)
+#also determines t1/2 for each calcium trace
+#open habit_baseline_pulses .csv file
+#on plots - dashed lines = fit
+decay_baseline_correct <- function(genotype, #mandatory genotype, should be text
+                                   pulse_length = 60, # time of pulse in seconds 
+                                   stim_length = 10, # time of stimulus in seconds
+                                   pre_pulse = 30, # time before each pulse in seconds
+                                   n_pulses = 5) {
+  
+  library(tidyverse)
+  library(magrittr)
+  # pulse_length <- 60
+  # stim_length <- 10
+  # n_pulses <- 5
+  
+  filename <- file.choose()
+  data <- read_csv(filename)
+  
+  ###### Get the time of the max delF after pulse initiation, but before #####
+  ######      removal
+  postPulse_data <- data %>%
+    group_by(genotype, animal, animal_num, pulse_num) %>%
+    filter(pulse_time > (pre_pulse-2) & pulse_time < (pre_pulse + stim_length - 0.5)) %>%
+    select(-signal, -MeanGCaMP, -MeanBackground, -fitted) %>% #get rid of some useless columns
+    mutate(row_number = row_number()) # first add a row_number column to use as index
+  
+  peak_rows <-data %>%
+    group_by(genotype, animal, animal_num, pulse_num) %>%
+    filter(pulse_time > (pre_pulse-2) & pulse_time < (pre_pulse + stim_length - 0.5)) %>%
+    summarize(peak = which.max(delF)) # gives the index (row number) of max value
+  
+  ##### now filter each pulse to take only times > than peak #####
+  decay_data <- full_join(postPulse_data, peak_rows) %>%
+    filter(row_number >= peak) %>%
+    group_by(genotype, animal, animal_num, pulse_num) %>%
+    mutate(new_row_number = row_number(),
+           decay_time = new_row_number*0.25) 
+  
+  #### plot result for pulse
+  plot1 <- decay_data %>%
+    filter(pulse_num < (n_pulses + 1)) %>%
+    ggplot(aes(x = decay_time, y = delF)) +
+    geom_line(aes(group = animal, colour = animal_num)) + 
+    facet_wrap(~pulse_num) +
+    guides(color = guide_legend("Pulse number"))
+  print(plot1)
+  
+  # in this model k = exp(lrc) and y(t) = c + y0*exp(-k*t)
+  # so ln(delF0 / .5 * delF0) = k * t(1/2), so ln(2)/k = t(1/2)
+  # final function is ln(2)/exp(lrc) = t(1/2)
+  
+  half_time_getter <- function(fit) {
+    lrc <- fit %>% broom::tidy() %>%
+      filter(term == "lrc") %>%
+      select(estimate) %>%
+      as.numeric()
+    half_time <- log(2)/exp(lrc)
+    return(half_time)
+  }
+  
+  p.val_getter <- function(fit) {
+    p.value <- fit %>% broom::tidy() %>%
+      filter(term == "lrc") %>%
+      select(p.value) %>%
+      as.numeric()
+    return(p.value)
+  }
+  
+  #### fit nls to the data ####
+  decay_data_fit <- decay_data %>%
+    filter(pulse_num < n_pulses + 1) %>%
+    group_by(animal, animal_num, pulse_num) %>%
+    nest() %>%
+    mutate(fit = map(data, ~try(nls(corrected_delF ~ SSasymp(decay_time, Asym, R0, lrc),
+                                    data = .x))))
+  
+  #### Get half-time, p.value and predictions from fits ####
+  decay_data_fit %<>%
+    mutate(fit_result = 
+             case_when(
+               class(unlist(fit)) == "character" ~ "error",
+               TRUE ~ "fit"))
+  
+  fit_results <- decay_data_fit %>% 
+    select(animal, animal_num, pulse_num, fit_result)
+  
+  decay_data_fit %<>%
+    filter(fit_result == "fit") %>%
+    mutate(half_time = map(fit, half_time_getter) %>% unlist(),
+           p.value = map(fit, p.val_getter) %>% unlist(),
+           predictions = map(fit, function(x) {predict(x)}))
+  
+  plot <- decay_data_fit %>%
+    unnest(cols = c(data, predictions)) %>%
+    ggplot(aes(x = decay_time, y = corrected_delF)) +
+    geom_line(aes(group = animal, colour = animal_num)) + 
+    geom_line(aes(group = animal, 
+                  colour = animal_num, y = predictions), 
+              lty = 2) +
+    facet_wrap(~pulse_num) +
+    guides(color = guide_legend("Pulse number"))
+  print(plot)
+  
+  fit_results <- full_join(decay_data_fit, fit_results) %>%
+    select(animal, animal_num, pulse_num, fit_result, half_time, p.value)
+  
+  write_csv(decay_data, file.path(dirname(filename), glue::glue({genotype},"_decay_baseline_correct.csv")))
+  
+  write_csv(fit_results, 
+            file.path(dirname(filename),
+                      glue::glue({genotype},
+                                 "_decay_baseline_correct_fit_results.csv")))
+  
+  ggsave(plot, filename = file.path(dirname(filename),
+                                    glue::glue({genotype},
+                                               "_decay_baseline_correct_plots.png")),
+         width = 11, height = 8.5, units = "in")
+  
+  message("results written to:")
+  print(file.path(dirname(filename), 
+                  glue::glue({genotype}, 
+                             "_decay_baseline_correct.csv")))
+  
+}

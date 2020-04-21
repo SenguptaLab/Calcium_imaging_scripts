@@ -1,4 +1,4 @@
-# This function determines the max peak for each pulse of odordant in a multi-pusle experiment
+##to analyze habituation across multiple pulses - gives peak delF per pulse
 habituation <- function(genotype, end = 30, ...) {
   #first get a directory path to use for saving:
   message("choose your habituation data file")
@@ -11,7 +11,7 @@ habituation <- function(genotype, end = 30, ...) {
            pulse_time = time - (pulse_num - 1)*60)
   
   peakPulses <- data %>%
-    group_by(animal, animal_num, pulse_num) %>%
+    group_by(genotype, animal, animal_num, pulse_num) %>%
     summarize(peak_delF = max_delta(delF, end = end)) # max of 20 frames after 'end' of the pre-pulse window, minus mean of 10 frames prior
   
   p <- peakPulses %>% ggplot(aes(x = pulse_num, y = peak_delF)) + geom_point()
