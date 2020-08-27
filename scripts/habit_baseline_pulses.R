@@ -1,3 +1,6 @@
+#a function to plot delta F / F for each pulse normalized to each baseline prior to the pulse overlaid
+#open raw .csv PlotCaMP_multi file
+#generates a .csv file and a plot 
 habit_baseline_pulses <- function(genotype, pulse_dur = 60, write_data = TRUE, n_pulses = 6) {
   
   library(tidyverse)

@@ -1,10 +1,10 @@
-#a function to make new adjusted heatmaps
-#open raw .csv PlotCaMP_multi file
-plot_heatmap <- function(data,
-                         heatmap_limits = "auto", 
-                         endPulse = 59.5,
-                         use_existing = FALSE,
-                         ...) {
+#a function to make new adjusted heatmaps- across MULTIPLE DAYS of imaging (where animal numbers may be the same/overlapping)
+#open raw .csv PlotCaMP_multi file and generate a new heat map with different parameters
+plot_heatmap_multi <- function(data,
+                               heatmap_limits = "auto", 
+                               endPulse = 59.5,
+                               use_existing = FALSE,
+                               ...) {
   library(tidyverse)
   library(magrittr)
   library(scales)
@@ -35,13 +35,13 @@ plot_heatmap <- function(data,
   limits <- breaks[c(1,3)]
   
   plot_order <- data %>% 
-    group_by(animal, animal_num) %>%
+    group_by(animal) %>%
     summarise(maxD = MF.matR::max_delta(delF, end = endPulse)) %>%
     arrange(maxD)
   
-  full_join(data, plot_order, cols = c("animal", "animal_num", "maxD")) %>% 
-    group_by(animal_num) %>%
-    ggplot(aes(x = time, y = fct_reorder(factor(animal_num), maxD))) +
+  full_join(data, plot_order, cols = c("animal", "maxD")) %>% 
+    filter(time < 60.25) %>%
+    ggplot(aes(x = time, y = fct_reorder(factor(animal), maxD))) +
     geom_tile(aes(fill = signal)) +
     scale_fill_viridis_c(option = "magma",
                          breaks = breaks,
