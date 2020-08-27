@@ -1,4 +1,5 @@
 ##to analyze habituation across multiple pulses, normalized to the largest response 
+#open habituation.csv file
 habituation_normalized <- function(genotype){
   message("choose your habituation data file")
   filename <- file.choose()

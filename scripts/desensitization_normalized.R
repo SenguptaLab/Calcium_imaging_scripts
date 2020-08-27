@@ -1,6 +1,6 @@
 #script to determine max peak delF value(max value throughout first 60s), and normalize delF values to this max value 
 #used to plot desensitization within a 60s experiment
-#open .csv file provided by PlotGCaMP_multi
+#open raw .csv PlotCaMP_multi file
 desensitization_normalized <- function(genotype){
   message("choose your .csv data file")
   filename <- file.choose()

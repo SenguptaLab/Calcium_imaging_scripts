@@ -1,4 +1,5 @@
 ##to analyze habituation across multiple pulses - gives peak delF per pulse
+#open .csv file provided by PlotGCaMP_multi
 habituation <- function(genotype, end = 30, ...) {
   #first get a directory path to use for saving:
   message("choose your habituation data file")

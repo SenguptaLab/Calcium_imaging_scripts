@@ -1,5 +1,5 @@
 #time to peak delF response for first pulse
-#open PlotGCaMP_multi csv file
+#open raw .csv PlotCaMP_multi file
 time_to_peak <- function(genotype, #mandatory genotype, should be text
                                  pulse_length = 60, # time of pulse-loop in seconds 
                                  stim_length = 10, # time of stimulus in seconds

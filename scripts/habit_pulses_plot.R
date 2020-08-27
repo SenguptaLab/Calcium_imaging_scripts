@@ -1,4 +1,5 @@
 #a function to plot delta F / F for each pulse overlaid 
+#open raw .csv PlotCaMP_multi file
 habit_pulses_plot <- function(genotype, pulse_dur = 60, write_data = TRUE, n_pulses = 6) {
   
   library(tidyverse)
